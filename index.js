@@ -8,7 +8,7 @@ class SwiftPlugin {
   }
 
   check() {
-    this.serverless.cli.log("Triggered");
+    console.log("Before Deploy Resources");
   }
 }
 
