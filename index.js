@@ -85,7 +85,7 @@ class SwiftPlugin {
       }
     });
 
-    if (service.provided.runtime == SWIFT_RUNTIME) {
+    if (service.provider.runtime == SWIFT_RUNTIME) {
       service.provider.runtime = BASE_RUNTIME;
     }
 
