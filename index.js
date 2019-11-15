@@ -3,6 +3,7 @@ const { spawnSync } = require("child_process");
 const DEFAULT_DOCKER_TAG = "0.0.1-swift-5.1.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
+const NO_OUTPUT_CAPTURE = { stdio: ["ignore", process.stdout, process.stderr] };
 
 class SwiftPlugin {
   constructor(serverless, options) {
@@ -31,11 +32,17 @@ class SwiftPlugin {
     ];
 
     const dockerTag = (funcArgs || {}).dockerTag || this.custom.dockerTag;
-    return spawnSync("docker", [
-      ...defaultArgs,
-      `mariusomdev/lambda-swift:${dockerTag}`,
-      `"swift build --configuration release --build-path .build-serverless"`
-    ]);
+    return spawnSync(
+      "docker",
+      [
+        ...defaultArgs,
+        `mariusomdev/lambda-swift:${dockerTag}`,
+        "/bin/bash",
+        "-c",
+        "swift build --configuration release --build-path .build-serverless"
+      ],
+      NO_OUTPUT_CAPTURE
+    );
   }
 
   // Usefull when deploying a specific function
