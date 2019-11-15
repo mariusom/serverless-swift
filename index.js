@@ -34,7 +34,7 @@ class SwiftPlugin {
     return spawnSync("docker", [
       ...defaultArgs,
       `mariusomdev/lambda-swift:${dockerTag}`,
-      `swift build --configuration release --build-path .build-serverless`
+      `"swift build --configuration release --build-path .build-serverless"`
     ]);
   }
 
