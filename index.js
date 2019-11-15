@@ -28,7 +28,7 @@ class SwiftPlugin {
       `${this.servicePath}:/src`,
       "--workdir",
       "/src",
-      `swift build --configuration release --build-path .build-serverless`
+      `"swift build --configuration release --build-path .build-serverless"`
     ];
 
     const dockerTag = (funcArgs || {}).dockerTag || this.custom.dockerTag;
