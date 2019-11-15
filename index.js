@@ -14,7 +14,9 @@ class SwiftPlugin {
     };
     this.custom = Object.assign(
       { dockerTag: DEFAULT_DOCKER_TAG },
-      this.serverless.service.custom.swift || {}
+      (this.serverless.service.custom &&
+        this.serverless.service.custom.swift) ||
+        {}
     );
   }
 
