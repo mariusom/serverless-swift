@@ -27,14 +27,14 @@ class SwiftPlugin {
       "-v",
       `${this.servicePath}:/src`,
       "--workdir",
-      "/src",
-      `"swift build --configuration release --build-path .build-serverless"`
+      "/src"
     ];
 
     const dockerTag = (funcArgs || {}).dockerTag || this.custom.dockerTag;
     return spawnSync("docker", [
       ...defaultArgs,
-      `mariusomdev/lambda-swift:${dockerTag}`
+      `mariusomdev/lambda-swift:${dockerTag}`,
+      `swift build --configuration release --build-path .build-serverless`
     ]);
   }
 
