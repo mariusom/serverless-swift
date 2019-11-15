@@ -3,7 +3,7 @@ class SwiftPlugin {
     this.serverless = serverless;
     this.options = options;
     this.hooks = {
-      "before:deploy:resources": this.check.bind(this)
+      "before:package:createDeploymentArtifacts": this.check.bind(this)
     };
   }
 
