@@ -4,7 +4,7 @@ import Plugin from "serverless/classes/Plugin";
 import BuildArtifacts from "./build-artifacts";
 import BuildLayer from "./build-layer";
 
-const DEFAULT_DOCKER_TAG = "0.0.6-swift-5.1.2";
+const DEFAULT_DOCKER_TAG = "0.0.7-swift-5.1.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
