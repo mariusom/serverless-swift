@@ -33,7 +33,7 @@ class SwiftPlugin {
     const buildPath = path.join(
       currentPath,
       ARTIFACTS_OUTPUT_FOLDER,
-      BUILD_CONFIGURATION
+      ARTIFACTS_LAMBDA_OUTPUT_FOLDER
     );
 
     const files = fs.readdirSync(buildPath, "utf8");
@@ -41,8 +41,11 @@ class SwiftPlugin {
     // Change to look for zips
 
     for (const file of files) {
-      const filePath = path.join(buildPath, file);
-      output[file] = filePath;
+      if (file.endsWith(".zip")) {
+        const filePath = path.join(buildPath, file);
+        const handler = file.replace(".zip", "");
+        output[handler] = filePath;
+      }
     }
 
     return output;
@@ -111,18 +114,17 @@ class SwiftPlugin {
       }
 
       const artifacts = this.getArtifacts();
-      const artifactFilenames = Object.keys(executables).map(
-        f => f.split(".")[0]
-      );
+      const foundHandlers = Object.keys(artifacts);
 
-      this.serverless.cli.log(`Found handlers: ${artifactFilenames}`);
-
-      if (!executableFilenames.includes(func.handler)) {
-        throw new Error(`${func.handler} not found in: ${artifactFilenames}.`);
-      }
+      this.serverless.cli.log(`Found handlers: ${foundHandlers}`);
 
       func.package = func.package || {};
-      func.package.artifact = artifacts[func.handler];
+
+      try {
+        func.package.artifact = artifacts[func.handler];
+      } catch {
+        throw new Error(`${func.handler} not found in: ${foundHandlers}.`);
+      }
 
       // Ensure the runtime is set to a sane value for other plugins
       if (func.runtime == SWIFT_RUNTIME) {
