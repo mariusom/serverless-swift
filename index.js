@@ -1,11 +1,9 @@
-const { spawnSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
+const BuildArtifacts = require("lib/build-artifacts");
+const BuildLayer = require("lib/build-layer");
 
 const DEFAULT_DOCKER_TAG = "0.0.5-swift-5.1.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
-const NO_OUTPUT_CAPTURE = { stdio: ["ignore", process.stdout, process.stderr] };
 
 const ARTIFACTS_OUTPUT_FOLDER = ".serverless-swift";
 const ARTIFACTS_LAMBDA_OUTPUT_FOLDER = "lambda";
@@ -17,60 +15,17 @@ class SwiftPlugin {
     this.servicePath = this.serverless.config.servicePath || "";
     this.options = options;
     this.hooks = {
-      "before:package:createDeploymentArtifacts": this.build.bind(this)
+      "before:package:createDeploymentArtifacts": this.buildArtifacts.bind(
+        this
+      ),
+      "before:package:compileLayers": this.buildLayer.bind(this)
     };
+
     this.custom = Object.assign(
       { dockerTag: DEFAULT_DOCKER_TAG },
       (this.serverless.service.custom &&
         this.serverless.service.custom.swift) ||
         {}
-    );
-  }
-
-  getArtifacts() {
-    const output = {};
-    const currentPath = process.cwd();
-    const buildPath = path.join(
-      currentPath,
-      ARTIFACTS_OUTPUT_FOLDER,
-      ARTIFACTS_LAMBDA_OUTPUT_FOLDER
-    );
-
-    const files = fs.readdirSync(buildPath, "utf8");
-
-    // Change to look for zips
-
-    for (const file of files) {
-      if (file.endsWith(".zip")) {
-        const filePath = path.join(buildPath, file);
-        const handler = file.replace(".zip", "");
-        output[handler] = filePath;
-      }
-    }
-
-    return output;
-  }
-
-  runDocker(funcArgs) {
-    const defaultArgs = [
-      "run",
-      "--rm",
-      "-t",
-      "-e",
-      `ARTIFACT_FOLDER=${ARTIFACTS_OUTPUT_FOLDER}`,
-      "-e",
-      `ARTIFACT_LAMBDA_FOLDER=${ARTIFACTS_LAMBDA_OUTPUT_FOLDER}`,
-      "-e",
-      `ARTIFACT_LAYER_FOLDER=${ARTIFACTS_LAYER_OUTPUT_FOLDER}`,
-      "-v",
-      `${this.servicePath}:/src`
-    ];
-
-    const dockerTag = (funcArgs || {}).dockerTag || this.custom.dockerTag;
-    return spawnSync(
-      "docker",
-      [...defaultArgs, `mariusomdev/lambda-swift:${dockerTag}`, `build`],
-      NO_OUTPUT_CAPTURE
     );
   }
 
@@ -83,7 +38,7 @@ class SwiftPlugin {
     }
   }
 
-  build() {
+  buildArtifacts() {
     const service = this.serverless.service;
 
     if (service.provider.name != "aws") {
@@ -103,9 +58,14 @@ class SwiftPlugin {
 
       swiftFunctionFound = true;
 
-      // Compile here using docker
+      // Compile swift code using docker
       this.serverless.cli.log(`Building native swift ${func.handler} func...`);
-      const res = this.runDocker(func.swift);
+      const artifactBuilder = new BuildArtifacts(
+        ARTIFACTS_OUTPUT_FOLDER,
+        ARTIFACTS_LAMBDA_OUTPUT_FOLDER
+      );
+
+      const res = artifactBuilder.runDocker(func.swift);
       if (res.error || res.status > 0) {
         this.serverless.cli.log(
           `Dockerized swift build encountered an error: ${res.error} ${res.status}.`
@@ -113,9 +73,8 @@ class SwiftPlugin {
         throw new Error(res.error);
       }
 
-      const artifacts = this.getArtifacts();
+      const artifacts = artifactBuilder.getArtifacts();
       const foundHandlers = Object.keys(artifacts);
-
       this.serverless.cli.log(`Found handlers: ${foundHandlers}`);
 
       func.package = func.package || {};
@@ -141,6 +100,33 @@ class SwiftPlugin {
         `Error: no Swift functions found. Use 'runtime ${SWIFT_RUNTIME}' in global or function configuration to use this plugin.`
       );
     }
+  }
+
+  buildLayer() {
+    const service = this.serverless.service;
+
+    if (service.provider.name != "aws") {
+      return;
+    }
+
+    const layerBuilder = new BuildLayer(
+      ARTIFACTS_OUTPUT_FOLDER,
+      ARTIFACTS_LAYER_OUTPUT_FOLDER
+    );
+
+    // Generate layer using docker
+    this.serverless.cli.log(`Building swift layer...`);
+    const res = layerBuilder.runDocker(func.swift);
+    if (res.error || res.status > 0) {
+      this.serverless.cli.log(
+        `Dockerized swift build encountered an error: ${res.error} ${res.status}.`
+      );
+      throw new Error(res.error);
+    }
+
+    const layer = layerBuilder.getLayer();
+
+    console.log(layer);
   }
 }
 
