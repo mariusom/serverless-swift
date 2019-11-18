@@ -1,9 +1,15 @@
 const { spawnSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
-const DEFAULT_DOCKER_TAG = "0.0.1-swift-5.1.2";
+const DEFAULT_DOCKER_TAG = "0.0.5-swift-5.1.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 const NO_OUTPUT_CAPTURE = { stdio: ["ignore", process.stdout, process.stderr] };
+
+const ARTIFACTS_OUTPUT_FOLDER = ".serverless-swift";
+const ARTIFACTS_LAMBDA_OUTPUT_FOLDER = "lambda";
+const ARTIFACTS_LAYER_OUTPUT_FOLDER = "layer";
 
 class SwiftPlugin {
   constructor(serverless, options) {
@@ -21,26 +27,46 @@ class SwiftPlugin {
     );
   }
 
+  getArtifacts() {
+    const output = {};
+    const currentPath = process.cwd();
+    const buildPath = path.join(
+      currentPath,
+      ARTIFACTS_OUTPUT_FOLDER,
+      BUILD_CONFIGURATION
+    );
+
+    const files = fs.readdirSync(buildPath, "utf8");
+
+    // Change to look for zips
+
+    for (const file of files) {
+      const filePath = path.join(buildPath, file);
+      output[file] = filePath;
+    }
+
+    return output;
+  }
+
   runDocker(funcArgs) {
     const defaultArgs = [
       "run",
       "--rm",
+      "-t",
+      "-e",
+      `ARTIFACT_FOLDER=${ARTIFACTS_OUTPUT_FOLDER}`,
+      "-e",
+      `ARTIFACT_LAMBDA_FOLDER=${ARTIFACTS_LAMBDA_OUTPUT_FOLDER}`,
+      "-e",
+      `ARTIFACT_LAYER_FOLDER=${ARTIFACTS_LAYER_OUTPUT_FOLDER}`,
       "-v",
-      `${this.servicePath}:/src`,
-      "--workdir",
-      "/src"
+      `${this.servicePath}:/src`
     ];
 
     const dockerTag = (funcArgs || {}).dockerTag || this.custom.dockerTag;
     return spawnSync(
       "docker",
-      [
-        ...defaultArgs,
-        `mariusomdev/lambda-swift:${dockerTag}`,
-        "/bin/bash",
-        "-c",
-        "swift build --configuration release --build-path .build-serverless"
-      ],
+      [...defaultArgs, `mariusomdev/lambda-swift:${dockerTag}`, `build`],
       NO_OUTPUT_CAPTURE
     );
   }
@@ -84,7 +110,19 @@ class SwiftPlugin {
         throw new Error(res.error);
       }
 
-      throw new Error("Implemented until here");
+      const artifacts = this.getArtifacts();
+      const artifactFilenames = Object.keys(executables).map(
+        f => f.split(".")[0]
+      );
+
+      this.serverless.cli.log(`Found handlers: ${artifactFilenames}`);
+
+      if (!executableFilenames.includes(func.handler)) {
+        throw new Error(`${func.handler} not found in: ${artifactFilenames}.`);
+      }
+
+      func.package = func.package || {};
+      func.package.artifact = artifacts[func.handler];
 
       // Ensure the runtime is set to a sane value for other plugins
       if (func.runtime == SWIFT_RUNTIME) {
