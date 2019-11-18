@@ -1,11 +1,12 @@
 {
   "name": "serverless-swift",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Serverless framework plugin for Swift applications",
   "main": "./dist/index.js",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "ncc build lib/index.ts -o dist -e node_modules",
+    "prepublish": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
