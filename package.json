@@ -1,9 +1,11 @@
 {
   "name": "serverless-swift",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Serverless framework plugin for Swift applications",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "ncc build lib/index.ts -o dist -e node_modules",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,7 +24,13 @@
     "url": "https://github.com/mariusom/serverless-swift/issues"
   },
   "homepage": "https://github.com/mariusom/serverless-swift#readme",
-  "dependencies": {
-    "serverless": "^1.57.0"
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^12.12.8",
+    "@types/serverless": "^1.18.4",
+    "@zeit/ncc": "^0.20.5",
+    "prettier": "^1.19.1",
+    "rimraf": "^3.0.0",
+    "typescript": "^3.7.2"
   }
 }
