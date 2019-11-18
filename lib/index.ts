@@ -129,16 +129,18 @@ class SwiftPlugin {
       const artifacts = artifactBuilder.getArtifacts();
       const foundHandlers = Object.keys(artifacts);
 
-      if (foundHandlers.includes(func.handler)) {
+      const funcHandler = func.handler.split(".")[0];
+
+      if (foundHandlers.includes(funcHandler)) {
         this.serverless.cli.log(`Found handlers: ${foundHandlers}`);
       } else {
         throw new Error(
-          `Provided function handler "${func.handler}" for "${func.name}" not found in: ${foundHandlers}`
+          `Provided function handler "${funcHandler}" for "${func.name}" not found in: ${foundHandlers}`
         );
       }
 
       func.package = func.package || { include: [], exclude: [] };
-      func.package.artifact = artifacts[func.handler];
+      func.package.artifact = artifacts[funcHandler];
 
       // Ensure the function runtime is set to a sane value for other plugins
       if (func.runtime == SWIFT_RUNTIME) {
