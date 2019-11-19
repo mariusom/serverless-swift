@@ -1,6 +1,6 @@
 {
   "name": "serverless-swift",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Serverless framework plugin for Swift applications",
   "main": "./dist/index.js",
   "scripts": {
