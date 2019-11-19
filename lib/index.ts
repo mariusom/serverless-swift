@@ -65,7 +65,8 @@ class SwiftPlugin {
       "before:package:createDeploymentArtifacts": this.buildArtifacts.bind(
         this
       ),
-      "before:package:compileLayers": this.buildLayer.bind(this)
+      "before:package:compileLayers": this.buildLayer.bind(this),
+      "before:deploy:function:packageFunction": this.buildArtifacts.bind(this)
     };
 
     this.custom = Object.assign(
