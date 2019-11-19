@@ -34,7 +34,11 @@ functions:
     handler: your-executable-binary
 ```
 
-# Acknowledgements
+The build needs to generate a swift executable. The name of the executable will either be the Swift project parent folder name or as specified in the Package.swift file, to replace with <your-executable-binary> above.
+
+Currently on every deploy it creates an AWS Lambda Layer, that is attached automatically to every swift functions. The layer makes it possible for the executable Swift binary to run in the Lambda.
+
+## 🙌 Acknowledgements
 
 This project has been possible thanks to the following people:
 
