@@ -27,7 +27,7 @@ class BuildLayer {
   }
 
   getBuildPath() {
-    return join(this.servicePath, this.outputFolder, this.layerFolder);
+    return join(this.outputFolder, this.layerFolder);
   }
 
   getLayer() {

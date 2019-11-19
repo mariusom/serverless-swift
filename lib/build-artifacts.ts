@@ -30,7 +30,7 @@ class BuildArtifacts {
   }
 
   getBuildPath() {
-    return join(this.servicePath, this.outputFolder, this.lambdaFolder);
+    return join(this.outputFolder, this.lambdaFolder);
   }
 
   getArtifacts() {
