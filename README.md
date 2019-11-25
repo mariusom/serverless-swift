@@ -40,12 +40,11 @@ Currently on every deploy it creates an AWS Lambda Layer, that is attached autom
 
 ## Configuration
 
-
 ### Swift private packages on Github
 
 When dealing with private swift packages held in github you can either forwards the ssh keys or the ssh agent so that the container will have access to clone the repos.
 
-- SSH Keys
+#### SSH Keys
 
 We can forward the ssh folder from the host machine to the running container (when it has no passphrase).
 
@@ -64,7 +63,7 @@ Or can activate it via the command line:
 sls <deploy/package> --ssh-keys
 ```
 
-- SSH Agent
+#### SSH Agent
 
 We can forward the ssh agent from the host machine to the running container (useful when ssh key has passphrease). Currently this only works with version 2.1.6.0(408) from the edge channel.
 
