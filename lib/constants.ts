@@ -1,11 +1,12 @@
 import { SpawnSyncOptions } from "child_process";
 
-const NO_OUTPUT_CAPTURE: SpawnSyncOptions = {
-  stdio: ["ignore", process.stdout, process.stderr]
+const spawnSyncOptions: SpawnSyncOptions = {
+  stdio: [process.stdin, process.stdout, process.stderr],
+  shell: true
 };
 
 const constants = {
-  outputCapture: NO_OUTPUT_CAPTURE
+  spawnSyncOptions: spawnSyncOptions
 };
 
 export default constants;

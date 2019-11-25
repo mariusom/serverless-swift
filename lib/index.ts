@@ -4,7 +4,7 @@ import Plugin from "serverless/classes/Plugin";
 import BuildArtifacts from "./build-artifacts";
 import BuildLayer from "./build-layer";
 
-const DEFAULT_DOCKER_TAG = "0.0.9-swift-5.1.2";
+const DEFAULT_DOCKER_TAG = "0.0.10-swift-5.1.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
@@ -51,7 +51,8 @@ class SwiftPlugin {
   hooks: Plugin.Hooks;
   custom: {
     dockerTag: string;
-    layer: { build: boolean; options?: { [key: string]: string } };
+    layer: { options?: { [key: string]: string } };
+    ssh: { agent: boolean; keys: boolean };
   } & {
     [key: string]: string;
   };
@@ -70,7 +71,11 @@ class SwiftPlugin {
     };
 
     this.custom = Object.assign(
-      { dockerTag: DEFAULT_DOCKER_TAG, layer: { build: false } },
+      {
+        dockerTag: DEFAULT_DOCKER_TAG,
+        ssh: { keys: false, agent: false },
+        layer: {}
+      },
       (this.serverless.service.custom &&
         this.serverless.service.custom.swift) ||
         {}
@@ -90,6 +95,14 @@ class SwiftPlugin {
 
       return runtime == SWIFT_RUNTIME;
     });
+  }
+
+  getSshKeyOption() {
+    return this.options["ssh-keys"] || this.custom.ssh.keys;
+  }
+
+  getSshAgentOption() {
+    return this.options["ssh-agent"] || this.custom.ssh.agent;
   }
 
   buildArtifacts() {
@@ -116,7 +129,9 @@ class SwiftPlugin {
         servicePath: this.servicePath,
         outputFolder: ARTIFACTS_OUTPUT_FOLDER,
         lambdaFolder: ARTIFACTS_LAMBDA_OUTPUT_FOLDER,
-        dockerTag: this.custom.dockerTag
+        dockerTag: this.custom.dockerTag,
+        forwardSshKeys: this.getSshKeyOption(),
+        forwardSshAgent: this.getSshAgentOption()
       });
 
       const res = artifactBuilder.runDocker(func.swift);

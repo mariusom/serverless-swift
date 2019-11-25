@@ -63,8 +63,14 @@ class BuildLayer {
     const dockerTag = (funcArgs || {}).dockerTag || this.dockerTag;
     return spawnSync(
       "docker",
-      [...defaultArgs, `mariusomdev/lambda-swift:${dockerTag}`, `layer`],
-      constants.outputCapture
+      [
+        ...defaultArgs,
+        `mariusomdev/lambda-swift:${dockerTag}`,
+        "/bin/bash",
+        "-c",
+        "build_layer.sh"
+      ],
+      constants.spawnSyncOptions
     );
   }
 }
