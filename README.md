@@ -57,7 +57,7 @@ custom:
       keys: true
 ```
 
-Or can activate it via the command line:
+Or you can activate it via the command line:
 
 ```bash
 sls <deploy/package> --ssh-keys
@@ -65,7 +65,7 @@ sls <deploy/package> --ssh-keys
 
 #### SSH Agent
 
-We can forward the ssh agent from the host machine to the running container (useful when ssh key has passphrease). Currently this only works with version 2.1.6.0(408) from the edge channel.
+We can forward the ssh agent from the host machine to the running container (useful when ssh key has passphrease). Currently this only works with Docker Machine for MacOS, version 2.1.6.0(408) from the edge channel.
 
 We can do this by setting custom variables to activate it:
 
@@ -76,7 +76,7 @@ custom:
       agent: true
 ```
 
-Or you can activate it via the command like:
+Or you can activate it via the command line:
 
 ```bash
 sls <deploy/package> --ssh-agent
