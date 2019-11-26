@@ -81,13 +81,29 @@ class BuildArtifacts {
     }
 
     if (this.forwardSshAgent) {
-      additionalArgs = [
-        ...additionalArgs,
-        "-v",
-        "/run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock",
-        "-e",
-        `SSH_AUTH_SOCK="/run/host-services/ssh-auth.sock"`
-      ];
+      const platform = process.platform;
+
+      if (platform === "darwin") {
+        additionalArgs = [
+          ...additionalArgs,
+          "-v",
+          "/run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock",
+          "-e",
+          `SSH_AUTH_SOCK="/run/host-services/ssh-auth.sock"`
+        ];
+      } else if (platform === "linux") {
+        additionalArgs = [
+          ...additionalArgs,
+          "-v",
+          `$(dirname ${process.env.SSH_AUTH_SOCK}):$(dirname ${process.env.SSH_AUTH_SOCK})`,
+          "-e",
+          `SSH_AUTH_SOCK="${process.env.SSH_AUTH_SOCK}"`
+        ];
+      } else {
+        throw new Error(
+          `Error: SSH Agent forwarding not implemeted for ${platform}`
+        );
+      }
     }
     const dockerTag = (funcArgs || {}).dockerTag || this.dockerTag;
 
