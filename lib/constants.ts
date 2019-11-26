@@ -1,7 +1,7 @@
 import { SpawnSyncOptions } from "child_process";
 
 const spawnSyncOptions: SpawnSyncOptions = {
-  stdio: [process.stdin, process.stdout, process.stderr],
+  stdio: ["ignore", process.stdout, process.stderr],
   shell: true
 };
 

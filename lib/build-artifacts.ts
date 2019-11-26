@@ -62,7 +62,7 @@ class BuildArtifacts {
     const defaultArgs = [
       "run",
       "--rm",
-      "-it",
+      "-t",
       "-e",
       `ARTIFACT_FOLDER=${this.outputFolder}`,
       "-e",
