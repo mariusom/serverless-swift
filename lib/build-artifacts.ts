@@ -18,23 +18,17 @@ class BuildArtifacts {
   outputFolder: string;
   lambdaFolder: string;
   dockerTag: string;
-  forwardSshKeys: boolean;
-  forwardSshAgent: boolean;
 
   constructor({
     servicePath,
     outputFolder,
     lambdaFolder,
-    dockerTag,
-    forwardSshKeys = false,
-    forwardSshAgent = false
+    dockerTag
   }: ConstructorParams) {
     this.servicePath = servicePath;
     this.outputFolder = outputFolder;
     this.lambdaFolder = lambdaFolder;
     this.dockerTag = dockerTag;
-    this.forwardSshKeys = forwardSshKeys;
-    this.forwardSshAgent = forwardSshAgent;
   }
 
   getBuildPath() {
@@ -70,48 +64,13 @@ class BuildArtifacts {
       "-v",
       `${this.servicePath}:/src`
     ];
-    let additionalArgs = [];
 
-    if (this.forwardSshKeys) {
-      additionalArgs = [
-        ...additionalArgs,
-        "-v",
-        `${process.env.HOME}/.ssh:/root/.ssh`
-      ];
-    }
-
-    if (this.forwardSshAgent) {
-      const platform = process.platform;
-
-      if (platform === "darwin") {
-        additionalArgs = [
-          ...additionalArgs,
-          "-v",
-          "/run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock",
-          "-e",
-          `SSH_AUTH_SOCK="/run/host-services/ssh-auth.sock"`
-        ];
-      } else if (platform === "linux") {
-        additionalArgs = [
-          ...additionalArgs,
-          "-v",
-          `$(dirname ${process.env.SSH_AUTH_SOCK}):$(dirname ${process.env.SSH_AUTH_SOCK})`,
-          "-e",
-          `SSH_AUTH_SOCK="${process.env.SSH_AUTH_SOCK}"`
-        ];
-      } else {
-        throw new Error(
-          `Error: SSH Agent forwarding not implemeted for ${platform}`
-        );
-      }
-    }
     const dockerTag = (funcArgs || {}).dockerTag || this.dockerTag;
 
     return spawnSync(
       "docker",
       [
         ...defaultArgs,
-        ...additionalArgs,
         `mariusomdev/lambda-swift:${dockerTag}`,
         "/bin/bash",
         "-c",

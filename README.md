@@ -38,50 +38,6 @@ The build needs to generate a swift executable. The name of the executable will 
 
 Currently on every deploy it creates an AWS Lambda Layer, that is attached automatically to every swift functions. The layer makes it possible for the executable Swift binary to run in the Lambda.
 
-## Configuration
-
-### Swift private packages on Github
-
-When dealing with private swift packages held in github you can either forwards the ssh keys or the ssh agent so that the container will have access to clone the repos.
-
-#### SSH Keys
-
-We can forward the ssh folder from the host machine to the running container (when it has no passphrase).
-
-We can do this by setting custom variables to activate it:
-
-```yaml
-custom:
-  swift:
-    ssh:
-      keys: true
-```
-
-Or you can activate it via the command line:
-
-```bash
-sls <deploy/package> --ssh-keys
-```
-
-#### SSH Agent
-
-We can forward the ssh agent from the host machine to the running container (useful when ssh key has passphrease). Currently this only works with Docker Machine for MacOS, version 2.1.6.0(408) from the edge channel.
-
-We can do this by setting custom variables to activate it:
-
-```yaml
-custom:
-  swift:
-    ssh:
-      agent: true
-```
-
-Or you can activate it via the command line:
-
-```bash
-sls <deploy/package> --ssh-agent
-```
-
 ## 🙌 Acknowledgements
 
 This project has been possible thanks to the following people:

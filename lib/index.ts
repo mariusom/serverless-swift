@@ -3,10 +3,13 @@ import Plugin from "serverless/classes/Plugin";
 
 import BuildArtifacts from "./build-artifacts";
 import BuildLayer from "./build-layer";
+import GetDependencies from "./get-dependencies";
 
 const DEFAULT_DOCKER_TAG = "0.0.10-swift-5.1.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
+
+const DOCKER_BUILD_FOLDER = ".build-serverless";
 
 const ARTIFACTS_OUTPUT_FOLDER = ".serverless-swift";
 const ARTIFACTS_LAMBDA_OUTPUT_FOLDER = "lambda";
@@ -52,7 +55,6 @@ class SwiftPlugin {
   custom: {
     dockerTag: string;
     layer: { options?: { [key: string]: string } };
-    ssh: { agent: boolean; keys: boolean };
   } & {
     [key: string]: string;
   };
@@ -73,7 +75,6 @@ class SwiftPlugin {
     this.custom = Object.assign(
       {
         dockerTag: DEFAULT_DOCKER_TAG,
-        ssh: { keys: false, agent: false },
         layer: {}
       },
       (this.serverless.service.custom &&
@@ -97,14 +98,6 @@ class SwiftPlugin {
     });
   }
 
-  getSshKeyOption() {
-    return this.options["ssh-keys"] || this.custom.ssh.keys;
-  }
-
-  getSshAgentOption() {
-    return this.options["ssh-agent"] || this.custom.ssh.agent;
-  }
-
   buildArtifacts() {
     const { service } = this.serverless;
     const { provider } = service;
@@ -123,15 +116,29 @@ class SwiftPlugin {
     for (const funcName of this.swiftFunctions) {
       const func: SwiftFunctionDefinition = service.getFunction(funcName);
 
+      // Retriving swift packages
+      this.serverless.cli.log(
+        `Downloading swift packages for ${func.handler} func...`
+      );
+      const dependenciesDownloader = new GetDependencies({
+        buildPath: DOCKER_BUILD_FOLDER
+      });
+
+      const resDownloader = dependenciesDownloader.get();
+      if (resDownloader.error || resDownloader.status > 0) {
+        this.serverless.cli.log(
+          `Downloading swift packages: ${resDownloader.error} ${resDownloader.status}.`
+        );
+        throw new Error(resDownloader.error.message);
+      }
+
       // Compile swift code using docker
       this.serverless.cli.log(`Building native swift ${func.handler} func...`);
       const artifactBuilder = new BuildArtifacts({
         servicePath: this.servicePath,
         outputFolder: ARTIFACTS_OUTPUT_FOLDER,
         lambdaFolder: ARTIFACTS_LAMBDA_OUTPUT_FOLDER,
-        dockerTag: this.custom.dockerTag,
-        forwardSshKeys: this.getSshKeyOption(),
-        forwardSshAgent: this.getSshAgentOption()
+        dockerTag: this.custom.dockerTag
       });
 
       const res = artifactBuilder.runDocker(func.swift);
