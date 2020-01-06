@@ -27,12 +27,12 @@
   "homepage": "https://github.com/mariusom/serverless-swift#readme",
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "^12.12.8",
+    "@types/node": "^13.1.4",
     "@types/serverless": "^1.18.4",
-    "@zeit/ncc": "^0.20.5",
+    "@zeit/ncc": "^0.21.0",
     "prettier": "^1.19.1",
     "rimraf": "^3.0.0",
-    "typescript": "^3.7.2"
+    "typescript": "^3.7.4"
   },
   "files": [
     "dist/",
