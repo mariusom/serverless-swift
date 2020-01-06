@@ -5,7 +5,7 @@ import BuildArtifacts from "./build-artifacts";
 import BuildLayer from "./build-layer";
 import GetDependencies from "./get-dependencies";
 
-const DEFAULT_DOCKER_TAG = "0.0.10-swift-5.1.2";
+const DEFAULT_DOCKER_TAG = "0.0.10-swift-5.1.3";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
