@@ -68,7 +68,7 @@ class BuildArtifacts {
         "lambda.zip",
         ".",
         "-x",
-        `".DS_Store"`
+        `"*.DS_Store"`
       ],
       constants.spawnSyncOptions
     );
