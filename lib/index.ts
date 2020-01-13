@@ -1,19 +1,18 @@
+import { join } from "path";
+import { ensureDirSync, copySync } from "fs-extra";
 import Serverless from "serverless";
 import Plugin from "serverless/classes/Plugin";
 
 import BuildArtifacts from "./build-artifacts";
-import BuildLayer from "./build-layer";
 import GetDependencies from "./get-dependencies";
 
-const DEFAULT_DOCKER_TAG = "0.0.10-swift-5.1.3";
+import constants from "./constants";
+
+const DEFAULT_DOCKER_TAG = "0.2.1-swift-5.1.3";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
-const DOCKER_BUILD_FOLDER = ".build-serverless";
-
-const ARTIFACTS_OUTPUT_FOLDER = ".serverless-swift";
-const ARTIFACTS_LAMBDA_OUTPUT_FOLDER = "lambda";
-const ARTIFACTS_LAYER_OUTPUT_FOLDER = "layer";
+const DOCKER_BUILD_FOLDER = ".build";
 
 type SwiftFunctionDefinition = Serverless.FunctionDefinition & {
   layers?: any[];
@@ -68,7 +67,7 @@ class SwiftPlugin {
       "before:package:createDeploymentArtifacts": this.buildArtifacts.bind(
         this
       ),
-      "before:package:compileLayers": this.buildLayer.bind(this),
+      "before:package:compileLayers": this.attachSwiftLayer.bind(this),
       "before:deploy:function:packageFunction": this.buildArtifacts.bind(this)
     };
 
@@ -98,7 +97,7 @@ class SwiftPlugin {
     });
   }
 
-  buildArtifacts() {
+  async buildArtifacts() {
     const { service } = this.serverless;
     const { provider } = service;
 
@@ -136,12 +135,10 @@ class SwiftPlugin {
       this.serverless.cli.log(`Building native swift ${func.handler} func...`);
       const artifactBuilder = new BuildArtifacts({
         servicePath: this.servicePath,
-        outputFolder: ARTIFACTS_OUTPUT_FOLDER,
-        lambdaFolder: ARTIFACTS_LAMBDA_OUTPUT_FOLDER,
         dockerTag: this.custom.dockerTag
       });
 
-      const res = artifactBuilder.runDocker(func.swift);
+      const res = artifactBuilder.runSwiftBuild(func.swift);
       if (res.error || res.status > 0) {
         this.serverless.cli.log(
           `Dockerized swift build encountered an error: ${res.error} ${res.status}.`
@@ -149,21 +146,43 @@ class SwiftPlugin {
         throw new Error(res.error.message);
       }
 
-      const artifacts = artifactBuilder.getArtifacts();
-      const foundHandlers = Object.keys(artifacts);
+      /**
+       * Using the func handler value to keep track of the executable file that needs
+       * to be included in the archive.
+       *
+       * Also need to rename func handler to bootstrap and put back the remaining segments
+       * after the rename.
+       */
+      const funcHandlerSegments = func.handler.split(".");
+      const funcHandler = funcHandlerSegments[0];
 
-      const funcHandler = func.handler.split(".")[0];
+      let changedFuncHandler = "boostrap";
 
-      if (foundHandlers.includes(funcHandler)) {
-        this.serverless.cli.log(`Found handlers: ${foundHandlers}`);
-      } else {
-        throw new Error(
-          `Provided function handler "${funcHandler}" for "${func.name}" not found in: ${foundHandlers}`
-        );
+      if (funcHandlerSegments.length > 1) {
+        let remainingSegments = funcHandlerSegments.splice(0, 1);
+        changedFuncHandler = `boostrap.${remainingSegments.join(".")}`;
       }
 
+      func.handler = changedFuncHandler;
+
+      // Generate archive
+      const pluginDir = join(".serverless", ".serverless-swift");
+      const dir = join(pluginDir, func.name);
+
+      ensureDirSync(dir);
+      copySync(join(".build", "release", funcHandler), join(dir, "bootstrap"));
+
       func.package = func.package || { include: [], exclude: [] };
-      func.package.artifact = artifacts[funcHandler];
+      func.package.individually = true;
+
+      if (func.package.include.length > 0) {
+        func.package.include.forEach(path => {
+          copySync(path, join(dir, path));
+        });
+      }
+
+      artifactBuilder.runZipCreation({ folderName: func.name });
+      func.package.artifact = join(dir, `lambda.zip`);
 
       // Ensure the function runtime is set to a sane value for other plugins
       if (func.runtime == SWIFT_RUNTIME) {
@@ -177,7 +196,7 @@ class SwiftPlugin {
     }
   }
 
-  buildLayer() {
+  attachSwiftLayer() {
     const { service } = this.serverless;
     const { provider } = service;
 
@@ -185,38 +204,15 @@ class SwiftPlugin {
       return;
     }
 
-    const layerBuilder = new BuildLayer({
-      servicePath: this.servicePath,
-      outputFolder: ARTIFACTS_OUTPUT_FOLDER,
-      layerFolder: ARTIFACTS_LAYER_OUTPUT_FOLDER,
-      dockerTag: this.custom.dockerTag
-    });
+    const { layerSupportedRegions } = constants;
 
-    // Generate layer using docker
-    this.serverless.cli.log(`Building swift layer...`);
-    const res = layerBuilder.runDocker(this.custom.layer.options);
-    if (res.error || res.status > 0) {
-      this.serverless.cli.log(
-        `Dockerized swift build encountered an error: ${res.error} ${res.status}.`
+    if (!layerSupportedRegions.includes(provider.region)) {
+      throw new Error(
+        `Error: there is no swift lamba layer available for the region: ${provider.region}.`
       );
-      throw new Error(res.error.message);
     }
 
-    const layer = layerBuilder.getLayer();
-
-    const name = `${provider.stage}${service.getServiceName()}`;
-
-    const layerObject: Layer = {
-      name: name,
-      description: `Layer for swift runtime with required libraries`,
-      package: {
-        artifact: layer["layer"]
-      }
-    };
-
-    const layerName = "serverless-Swift";
-    service.layers = service.layers || {};
-    service.layers[layerName] = layerObject;
+    const layerArn = `arn:aws:lambda:${provider.region}:635835178146:layer:swift:2`;
 
     // Attach runtime layer to swift functions
     const swiftFunctions = this.swiftFunctions;
@@ -230,9 +226,14 @@ class SwiftPlugin {
       const func: SwiftFunctionDefinition = service.getFunction(funcName);
 
       func.layers = func.layers || [];
-      func.layers.push({
-        Ref: "ServerlessDashSwiftLambdaLayer"
-      });
+
+      if (func.layers.length >= 5) {
+        throw new Error(
+          `Error: cannot attach the swift layer because the maximum number of layers has been reached.`
+        );
+      }
+
+      func.layers.push(layerArn);
     }
   }
 }
