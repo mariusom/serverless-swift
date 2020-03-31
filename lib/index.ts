@@ -8,9 +8,12 @@ import GetDependencies from "./get-dependencies";
 
 import constants from "./constants";
 
-const DEFAULT_DOCKER_TAG = "0.2.1-swift-5.1.3";
+const DEFAULT_DOCKER_TAG = "5.2.0-swift-5.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
+
+const layerArn = (region: string) =>
+  `arn:aws:lambda:${region}:635835178146:layer:swift:3`;
 
 const DOCKER_BUILD_FOLDER = ".build";
 
@@ -212,8 +215,6 @@ class SwiftPlugin {
       );
     }
 
-    const layerArn = `arn:aws:lambda:${provider.region}:635835178146:layer:swift:2`;
-
     // Attach runtime layer to swift functions
     const swiftFunctions = this.swiftFunctions;
     if (swiftFunctions.length === 0) {
@@ -233,7 +234,7 @@ class SwiftPlugin {
         );
       }
 
-      func.layers.push(layerArn);
+      func.layers.push(layerArn(provider.region));
     }
   }
 }
