@@ -4,7 +4,6 @@ import Serverless from "serverless";
 import Plugin from "serverless/classes/Plugin";
 
 import BuildArtifacts from "./build-artifacts";
-import GetDependencies from "./get-dependencies";
 
 import constants from "./constants";
 
@@ -14,8 +13,6 @@ const BASE_RUNTIME = "provided";
 
 const layerArn = (region: string) =>
   `arn:aws:lambda:${region}:635835178146:layer:swift:3`;
-
-const DOCKER_BUILD_FOLDER = ".build";
 
 type SwiftFunctionDefinition = Serverless.FunctionDefinition & {
   layers?: any[];
@@ -117,22 +114,6 @@ class SwiftPlugin {
 
     for (const funcName of this.swiftFunctions) {
       const func: SwiftFunctionDefinition = service.getFunction(funcName);
-
-      // Retriving swift packages
-      this.serverless.cli.log(
-        `Downloading swift packages for ${func.handler} func...`
-      );
-      const dependenciesDownloader = new GetDependencies({
-        buildPath: DOCKER_BUILD_FOLDER,
-      });
-
-      const resDownloader = dependenciesDownloader.get();
-      if (resDownloader.error || resDownloader.status > 0) {
-        this.serverless.cli.log(
-          `Downloading swift packages: ${resDownloader.error} ${resDownloader.status}.`
-        );
-        throw new Error(resDownloader.error.message);
-      }
 
       // Compile swift code using docker
       this.serverless.cli.log(`Building native swift ${func.handler} func...`);
