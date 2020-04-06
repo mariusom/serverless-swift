@@ -8,7 +8,7 @@ import GetDependencies from "./get-dependencies";
 
 import constants from "./constants";
 
-const DEFAULT_DOCKER_TAG = "0.2.1-swift-5.2";
+const DEFAULT_DOCKER_TAG = "0.2.2-swift-5.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
