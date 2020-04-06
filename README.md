@@ -22,8 +22,6 @@ provider:
   runtime: swift
 
 plugins:
-  # this adds informs serverless to use
-  # the serverless-swift plugin
   - serverless-swift
 
 functions:
