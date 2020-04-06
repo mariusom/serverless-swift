@@ -8,7 +8,7 @@ import GetDependencies from "./get-dependencies";
 
 import constants from "./constants";
 
-const DEFAULT_DOCKER_TAG = "5.2.0-swift-5.2";
+const DEFAULT_DOCKER_TAG = "0.2.1-swift-5.2";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
@@ -71,13 +71,13 @@ class SwiftPlugin {
         this
       ),
       "before:package:compileLayers": this.attachSwiftLayer.bind(this),
-      "before:deploy:function:packageFunction": this.buildArtifacts.bind(this)
+      "before:deploy:function:packageFunction": this.buildArtifacts.bind(this),
     };
 
     this.custom = Object.assign(
       {
         dockerTag: DEFAULT_DOCKER_TAG,
-        layer: {}
+        layer: {},
       },
       (this.serverless.service.custom &&
         this.serverless.service.custom.swift) ||
@@ -123,7 +123,7 @@ class SwiftPlugin {
         `Downloading swift packages for ${func.handler} func...`
       );
       const dependenciesDownloader = new GetDependencies({
-        buildPath: DOCKER_BUILD_FOLDER
+        buildPath: DOCKER_BUILD_FOLDER,
       });
 
       const resDownloader = dependenciesDownloader.get();
@@ -138,7 +138,7 @@ class SwiftPlugin {
       this.serverless.cli.log(`Building native swift ${func.handler} func...`);
       const artifactBuilder = new BuildArtifacts({
         servicePath: this.servicePath,
-        dockerTag: this.custom.dockerTag
+        dockerTag: this.custom.dockerTag,
       });
 
       const res = artifactBuilder.runSwiftBuild(func.swift);
@@ -179,7 +179,7 @@ class SwiftPlugin {
       func.package.individually = true;
 
       if (func.package.include.length > 0) {
-        func.package.include.forEach(path => {
+        func.package.include.forEach((path) => {
           copySync(path, join(dir, path));
         });
       }
