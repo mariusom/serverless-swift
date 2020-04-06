@@ -139,6 +139,7 @@ class SwiftPlugin {
       const artifactBuilder = new BuildArtifacts({
         servicePath: this.servicePath,
         dockerTag: this.custom.dockerTag,
+        forwardSshKeys: Boolean(this.custom.forwardSshKeys),
       });
 
       const res = artifactBuilder.runSwiftBuild(func.swift);

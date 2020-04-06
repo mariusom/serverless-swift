@@ -5,15 +5,22 @@ import constants from "./constants";
 export type ConstructorParams = {
   servicePath: string;
   dockerTag: string;
+  forwardSshKeys: boolean;
 };
 
 class BuildArtifacts {
   servicePath: string;
   dockerTag: string;
+  forwardSshKeys: boolean;
 
-  constructor({ servicePath, dockerTag }: ConstructorParams) {
+  constructor({
+    servicePath,
+    dockerTag,
+    forwardSshKeys = false,
+  }: ConstructorParams) {
     this.servicePath = servicePath;
     this.dockerTag = dockerTag;
+    this.forwardSshKeys = forwardSshKeys;
   }
 
   runSwiftBuild(funcArgs) {
@@ -24,8 +31,18 @@ class BuildArtifacts {
       "-v",
       `${this.servicePath}:/src`,
       "-w",
-      "/src"
+      "/src",
     ];
+
+    let additionalArgs = [];
+
+    if (this.forwardSshKeys) {
+      additionalArgs = [
+        ...additionalArgs,
+        "-v",
+        `${process.env.HOME}/.ssh:/root/.ssh`,
+      ];
+    }
 
     const dockerTag = (funcArgs || {}).dockerTag || this.dockerTag;
 
@@ -33,11 +50,12 @@ class BuildArtifacts {
       "docker",
       [
         ...defaultArgs,
+        ...additionalArgs,
         `mariusomdev/aws-lambda-swift:${dockerTag}`,
         "swift",
         "build",
         "--configuration",
-        "release"
+        "release",
       ],
       constants.spawnSyncOptions
     );
@@ -53,7 +71,7 @@ class BuildArtifacts {
       "-v",
       `${this.servicePath}:/src`,
       "-w",
-      `/src/.serverless/.serverless-swift/${folderName}/`
+      `/src/.serverless/.serverless-swift/${folderName}/`,
     ];
 
     const dockerTag = (funcArgs || {}).dockerTag || this.dockerTag;
@@ -68,7 +86,7 @@ class BuildArtifacts {
         "lambda.zip",
         ".",
         "-x",
-        `"*.DS_Store"`
+        `"*.DS_Store"`,
       ],
       constants.spawnSyncOptions
     );
