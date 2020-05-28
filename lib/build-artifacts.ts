@@ -42,7 +42,7 @@ class BuildArtifacts {
       additionalArgs = [
         ...additionalArgs,
         "-v",
-        `${process.env.HOME}/.ssh:/root/.ssh`,
+        `${process.env.HOME}/.ssh:/root/.ssh:ro`,
       ];
     }
 
