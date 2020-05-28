@@ -133,7 +133,7 @@ class SwiftPlugin {
       const dir = join(pluginDir, func.name);
 
       if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
+        fs.mkdirSync(dir, { recursive: true });
       }
 
       const from = join(".build", "release", funcHandler);
