@@ -1,5 +1,7 @@
 import { spawnSync } from "child_process";
 
+import { SwiftOptions } from "./types";
+
 import constants from "./constants";
 
 export type ConstructorParams = {
@@ -23,7 +25,7 @@ class BuildArtifacts {
     this.forwardSshKeys = forwardSshKeys;
   }
 
-  runSwiftBuild(funcArgs) {
+  runSwiftBuild(funcArgs: SwiftOptions) {
     const defaultArgs = [
       "run",
       "--rm",
@@ -34,7 +36,7 @@ class BuildArtifacts {
       "/src",
     ];
 
-    let additionalArgs = [];
+    let additionalArgs: string[] = [];
 
     if (this.forwardSshKeys) {
       additionalArgs = [

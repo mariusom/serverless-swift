@@ -1,11 +1,12 @@
 import { join } from "path";
-import { ensureDirSync, copySync } from "fs-extra";
+import fs from "fs";
+
 import Serverless from "serverless";
 import Plugin from "serverless/classes/Plugin";
 
 import BuildArtifacts from "./build-artifacts";
-
 import constants from "./constants";
+import { ServerlessExtended, SwiftFunctionDefinition } from "./types";
 
 const DEFAULT_DOCKER_TAG = "0.2.2-swift-5.2";
 const SWIFT_RUNTIME = "swift";
@@ -13,38 +14,6 @@ const BASE_RUNTIME = "provided";
 
 const layerArn = (region: string) =>
   `arn:aws:lambda:${region}:635835178146:layer:swift:3`;
-
-type SwiftFunctionDefinition = Serverless.FunctionDefinition & {
-  layers?: any[];
-  swift?: {
-    [key: string]: string;
-  };
-};
-
-type Layer = {
-  name?: string;
-  description?: string;
-  licenseInfo?: string;
-  compatibleRuntimes?: string;
-  retain?: boolean;
-  allowedAccounts?: string[];
-  package?: {
-    artifact?: string;
-  };
-};
-
-type ServerlessExtended = Serverless & {
-  service: {
-    layers?: { [key: string]: Layer };
-    getLayers?: (arg0: string) => Layer;
-    getAllLayers?: () => Layer[];
-    provider?: {
-      naming?: {
-        getLambdaLayerLogicalId?: (arg0: string) => string;
-      };
-    };
-  };
-};
 
 class SwiftPlugin {
   serverless: ServerlessExtended;
@@ -124,11 +93,20 @@ class SwiftPlugin {
       });
 
       const res = artifactBuilder.runSwiftBuild(func.swift);
-      if (res.error || res.status > 0) {
+
+      if (res.error) {
         this.serverless.cli.log(
           `Dockerized swift build encountered an error: ${res.error} ${res.status}.`
         );
+
         throw new Error(res.error.message);
+      }
+      if (res.status !== null && res.status > 0) {
+        this.serverless.cli.log(
+          `Dockerized swift build encountered an error: ${res.error} ${res.status}.`
+        );
+
+        throw new Error(`Docker run failed with status: ${res.status}`);
       }
 
       /**
@@ -154,15 +132,22 @@ class SwiftPlugin {
       const pluginDir = join(".serverless", ".serverless-swift");
       const dir = join(pluginDir, func.name);
 
-      ensureDirSync(dir);
-      copySync(join(".build", "release", funcHandler), join(dir, "bootstrap"));
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+
+      const from = join(".build", "release", funcHandler);
+      const to = join(dir, "bootstrap");
+      fs.createReadStream(from).pipe(fs.createWriteStream(to));
 
       func.package = func.package || { include: [], exclude: [] };
       func.package.individually = true;
 
       if (func.package.include.length > 0) {
         func.package.include.forEach((path) => {
-          copySync(path, join(dir, path));
+          const from = path;
+          const to = join(dir, path);
+          fs.createReadStream(from).pipe(fs.createWriteStream(to));
         });
       }
 
