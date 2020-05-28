@@ -138,7 +138,7 @@ class SwiftPlugin {
 
       const from = join(".build", "release", funcHandler);
       const to = join(dir, "bootstrap");
-      fs.createReadStream(from).pipe(fs.createWriteStream(to));
+      fs.copyFileSync(from, to);
 
       func.package = func.package || { include: [], exclude: [] };
       func.package.individually = true;
@@ -147,7 +147,7 @@ class SwiftPlugin {
         func.package.include.forEach((path) => {
           const from = path;
           const to = join(dir, path);
-          fs.createReadStream(from).pipe(fs.createWriteStream(to));
+          fs.copyFileSync(from, to);
         });
       }
 
