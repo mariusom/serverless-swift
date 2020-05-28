@@ -129,8 +129,7 @@ class SwiftPlugin {
       func.handler = changedFuncHandler;
 
       // Generate archive
-      const pluginDir = join(".serverless", ".serverless-swift");
-      const dir = join(pluginDir, func.name);
+      const dir = join(".", ".serverless", ".serverless-swift", func.name);
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
