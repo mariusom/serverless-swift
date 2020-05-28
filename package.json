@@ -1,6 +1,6 @@
 {
   "name": "serverless-swift",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "Serverless framework plugin for Swift applications",
   "main": "./dist/index.js",
   "scripts": {
@@ -8,6 +8,9 @@
     "build": "tsc",
     "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=10.12.0"
   },
   "repository": {
     "type": "git",
