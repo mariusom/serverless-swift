@@ -1,5 +1,5 @@
+import * as fs from "fs";
 import { join } from "path";
-import fs from "fs";
 
 import Serverless from "serverless";
 import Plugin from "serverless/classes/Plugin";
