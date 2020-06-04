@@ -8,7 +8,7 @@ import BuildArtifacts from "./build-artifacts";
 import constants from "./constants";
 import { ServerlessExtended, SwiftFunctionDefinition } from "./types";
 
-const DEFAULT_DOCKER_TAG = "1.0.1-swift-5.3-dev";
+const DEFAULT_DOCKER_TAG = "1.0.2-swift-5.3-dev";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
