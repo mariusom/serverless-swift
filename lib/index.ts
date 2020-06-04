@@ -8,12 +8,12 @@ import BuildArtifacts from "./build-artifacts";
 import constants from "./constants";
 import { ServerlessExtended, SwiftFunctionDefinition } from "./types";
 
-const DEFAULT_DOCKER_TAG = "0.2.2-swift-5.2";
+const DEFAULT_DOCKER_TAG = "1.0.0-swift-5.3-dev";
 const SWIFT_RUNTIME = "swift";
 const BASE_RUNTIME = "provided";
 
 const layerArn = (region: string) =>
-  `arn:aws:lambda:${region}:635835178146:layer:swift:3`;
+  `arn:aws:lambda:${region}:635835178146:layer:swift:4`;
 
 class SwiftPlugin {
   serverless: ServerlessExtended;
