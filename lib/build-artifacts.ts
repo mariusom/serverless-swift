@@ -60,6 +60,7 @@ class BuildArtifacts {
         "release",
         "-Xswiftc",
         "-g",
+        "-Xswiftc",
         "-cross-module-optimization",
       ],
       constants.spawnSyncOptions
