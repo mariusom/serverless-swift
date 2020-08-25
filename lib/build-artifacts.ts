@@ -2,39 +2,52 @@ import { spawnSync } from "child_process";
 
 import { SwiftOptions } from "./types";
 
-import constants from "./constants";
+import { spawnSyncOptions, DOCKER_TAG } from "./constants";
+import { dockerImage } from "./utils";
 
 export type ConstructorParams = {
   servicePath: string;
   dockerTag: string;
   forwardSshKeys: boolean;
+  swiftBuildFolder: string;
+  serverlessSwiftBuildFolder: string;
 };
 
 class BuildArtifacts {
   servicePath: string;
   dockerTag: string;
+  swiftBuildFolder: string;
+  serverlessSwiftBuildFolder: string;
   forwardSshKeys: boolean;
 
   constructor({
     servicePath,
     dockerTag,
+    swiftBuildFolder,
+    serverlessSwiftBuildFolder,
     forwardSshKeys = false,
   }: ConstructorParams) {
     this.servicePath = servicePath;
     this.dockerTag = dockerTag;
+    this.swiftBuildFolder = swiftBuildFolder;
+    this.serverlessSwiftBuildFolder = serverlessSwiftBuildFolder;
     this.forwardSshKeys = forwardSshKeys;
   }
 
+  getDockerTag(funcArgs: SwiftOptions): string {
+    return (funcArgs || {}).dockerTag || this.dockerTag || DOCKER_TAG;
+  }
+
+  getDockerImage(funcArgs: SwiftOptions): string {
+    return dockerImage(this.getDockerTag(funcArgs));
+  }
+
+  getDefaultArgs(): string[] {
+    return ["run", "--rm", "-t", "-v", `${this.servicePath}:/src`];
+  }
+
   runSwiftBuild(funcArgs: SwiftOptions) {
-    const defaultArgs = [
-      "run",
-      "--rm",
-      "-t",
-      "-v",
-      `${this.servicePath}:/src`,
-      "-w",
-      "/src",
-    ];
+    const defaultArgs = [...this.getDefaultArgs(), "-w", "/src"];
 
     let additionalArgs: string[] = [];
 
@@ -46,14 +59,12 @@ class BuildArtifacts {
       ];
     }
 
-    const dockerTag = (funcArgs || {}).dockerTag || this.dockerTag;
-
     return spawnSync(
       "docker",
       [
         ...defaultArgs,
         ...additionalArgs,
-        `mariusomdev/aws-lambda-swift:${dockerTag}`,
+        this.getDockerImage(funcArgs),
         "swift",
         "build",
         "--configuration",
@@ -62,31 +73,30 @@ class BuildArtifacts {
         "-g",
         "-Xswiftc",
         "-cross-module-optimization",
+        "--build-path",
+        `.build/${this.swiftBuildFolder}`,
       ],
-      constants.spawnSyncOptions
+      spawnSyncOptions
     );
   }
 
-  runZipCreation(funcArgs: { dockerTag?: string; folderName: string }) {
+  runZipCreation(
+    funcArgs: SwiftOptions & {
+      folderName: string;
+    }
+  ) {
     const { folderName } = funcArgs;
-
     const defaultArgs = [
-      "run",
-      "--rm",
-      "-t",
-      "-v",
-      `${this.servicePath}:/src`,
+      ...this.getDefaultArgs(),
       "-w",
-      `/src/.serverless/.serverless-swift/${folderName}/`,
+      `/src/.serverless/${this.serverlessSwiftBuildFolder}/${folderName}/`,
     ];
-
-    const dockerTag = (funcArgs || {}).dockerTag || this.dockerTag;
 
     return spawnSync(
       "docker",
       [
         ...defaultArgs,
-        `mariusomdev/aws-lambda-swift:${dockerTag}`,
+        this.getDockerImage(funcArgs),
         "zip",
         "-r",
         "lambda.zip",
@@ -94,7 +104,7 @@ class BuildArtifacts {
         "-x",
         `"*.DS_Store"`,
       ],
-      constants.spawnSyncOptions
+      spawnSyncOptions
     );
   }
 }

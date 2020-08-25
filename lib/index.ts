@@ -5,15 +5,15 @@ import Serverless from "serverless";
 import Plugin from "serverless/classes/Plugin";
 
 import BuildArtifacts from "./build-artifacts";
-import constants from "./constants";
+import {
+  LAYER_SUPPORTED_REGIONS,
+  SWIFT_RUNTIME,
+  BASE_RUNTIME,
+} from "./constants";
+
+import { layerArn } from "./utils";
+
 import { ServerlessExtended, SwiftFunctionDefinition } from "./types";
-
-const DEFAULT_DOCKER_TAG = "1.0.2-swift-5.3-dev";
-const SWIFT_RUNTIME = "swift";
-const BASE_RUNTIME = "provided";
-
-const layerArn = (region: string) =>
-  `arn:aws:lambda:${region}:635835178146:layer:swift:4`;
 
 class SwiftPlugin {
   serverless: ServerlessExtended;
@@ -42,7 +42,7 @@ class SwiftPlugin {
 
     this.custom = Object.assign(
       {
-        dockerTag: DEFAULT_DOCKER_TAG,
+        dockerTag: null,
         layer: {},
       },
       (this.serverless.service.custom &&
@@ -81,6 +81,9 @@ class SwiftPlugin {
       );
     }
 
+    const swiftBuildFolder = "serverless-swift";
+    const serverlessSwiftBuildFolder = "serverless-swift";
+
     for (const funcName of this.swiftFunctions) {
       const func: SwiftFunctionDefinition = service.getFunction(funcName);
 
@@ -90,6 +93,8 @@ class SwiftPlugin {
         servicePath: this.servicePath,
         dockerTag: this.custom.dockerTag,
         forwardSshKeys: Boolean(this.custom.forwardSshKeys),
+        swiftBuildFolder: swiftBuildFolder,
+        serverlessSwiftBuildFolder: serverlessSwiftBuildFolder,
       });
 
       const res = artifactBuilder.runSwiftBuild(func.swift);
@@ -129,13 +134,18 @@ class SwiftPlugin {
       func.handler = changedFuncHandler;
 
       // Generate archive
-      const dir = join(".", ".serverless", ".serverless-swift", func.name);
+      const dir = join(
+        ".",
+        ".serverless",
+        serverlessSwiftBuildFolder,
+        func.name
+      );
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      const from = join(".build", "release", funcHandler);
+      const from = join(".build", swiftBuildFolder, "release", funcHandler);
       const to = join(dir, "bootstrap");
       fs.copyFileSync(from, to);
 
@@ -150,7 +160,7 @@ class SwiftPlugin {
         });
       }
 
-      artifactBuilder.runZipCreation({ folderName: func.name });
+      artifactBuilder.runZipCreation({ ...func.swift, folderName: func.name });
       func.package.artifact = join(dir, `lambda.zip`);
 
       // Ensure the function runtime is set to a sane value for other plugins
@@ -173,9 +183,7 @@ class SwiftPlugin {
       return;
     }
 
-    const { layerSupportedRegions } = constants;
-
-    if (!layerSupportedRegions.includes(provider.region)) {
+    if (!LAYER_SUPPORTED_REGIONS.includes(provider.region)) {
       throw new Error(
         `Error: there is no swift lamba layer available for the region: ${provider.region}.`
       );
